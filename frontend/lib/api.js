@@ -1,0 +1,34 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+
+function getToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
+}
+
+async function request(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error en la solicitud');
+  return data;
+}
+
+export const api = {
+  register: (data) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  getTrending: () => request('/tmdb/trending'),
+  search: (q) => request(`/tmdb/search?q=${encodeURIComponent(q)}`),
+  getMovie: (id) => request(`/tmdb/movie/${id}`),
+  getTv: (id) => request(`/tmdb/tv/${id}`),
+  getWatchlist: () => request('/watchlist'),
+  addToWatchlist: (data) => request('/watchlist', { method: 'POST', body: JSON.stringify(data) }),
+  updateWatchlist: (id, status) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  removeFromWatchlist: (id) => request(`/watchlist/${id}`, { method: 'DELETE' }),
+};
