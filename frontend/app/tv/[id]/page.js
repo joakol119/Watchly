@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import Navbar from '../../../components/Navbar';
+import MediaCard from '../../../components/MediaCard';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
 
 export default function TvPage() {
   const [show, setShow] = useState(null);
+  const [watchlist, setWatchlist] = useState([]);
   const [watchlistItem, setWatchlistItem] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,7 @@ export default function TvPage() {
     Promise.all([api.getTv(id), api.getWatchlist()])
       .then(([s, wl]) => {
         setShow(s);
+        setWatchlist(wl);
         setWatchlistItem(wl.find(w => w.tmdb_id === s.id && w.media_type === 'tv') || null);
       })
       .catch(console.error)
@@ -33,6 +36,7 @@ export default function TvPage() {
     try {
       const added = await api.addToWatchlist({ tmdb_id: show.id, media_type: 'tv', title: show.name, poster_path: show.poster_path });
       setWatchlistItem(added);
+      setWatchlist(prev => [...prev, added]);
     } catch (err) { console.error(err); }
   };
 
@@ -43,14 +47,26 @@ export default function TvPage() {
     } catch (err) { console.error(err); }
   };
 
+  const handleAddSimilar = async (item, type) => {
+    const key = `${type}-${item.id}`;
+    if (watchlistMap[key]) return;
+    try {
+      const added = await api.addToWatchlist({ tmdb_id: item.id, media_type: type, title: item.title || item.name, poster_path: item.poster_path });
+      setWatchlist(prev => [...prev, added]);
+    } catch (err) { console.error(err); }
+  };
+
+  const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));
+
   if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>Cargando...</div>;
   if (!show) return null;
 
   const trailer = show.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
   const cast = show.credits?.cast?.slice(0, 8) || [];
+  const similar = (show.similar?.results || []).filter(s => s.poster_path).slice(0, 8);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar user={user} />
 
       {show.backdrop_path && (
@@ -119,6 +135,17 @@ export default function TvPage() {
                   <p style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{person.name}</p>
                   <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>{person.character}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {similar.length > 0 && (
+          <div style={{ marginTop: 48 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Series similares</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+              {similar.map(item => (
+                <MediaCard key={item.id} item={{ ...item, media_type: 'tv' }} onAdd={handleAddSimilar} watchlistMap={watchlistMap} />
               ))}
             </div>
           </div>

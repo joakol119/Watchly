@@ -27,23 +27,25 @@ router.get('/search', auth, async (req, res) => {
 
 router.get('/movie/:id', auth, async (req, res) => {
   try {
-    const [details, credits, videos] = await Promise.all([
+    const [details, credits, videos, similar] = await Promise.all([
       tmdb(`/movie/${req.params.id}?`),
       tmdb(`/movie/${req.params.id}/credits?`),
       tmdb(`/movie/${req.params.id}/videos?`),
+      tmdb(`/movie/${req.params.id}/similar?`),
     ]);
-    res.json({ ...details, credits, videos });
+    res.json({ ...details, credits, videos, similar });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/tv/:id', auth, async (req, res) => {
   try {
-    const [details, credits, videos] = await Promise.all([
+    const [details, credits, videos, similar] = await Promise.all([
       tmdb(`/tv/${req.params.id}?`),
       tmdb(`/tv/${req.params.id}/credits?`),
       tmdb(`/tv/${req.params.id}/videos?`),
+      tmdb(`/tv/${req.params.id}/similar?`),
     ]);
-    res.json({ ...details, credits, videos });
+    res.json({ ...details, credits, videos, similar });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
