@@ -6,11 +6,14 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 4001;
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://localhost:3001'];
+const originsEnv = process.env.ALLOWED_ORIGINS;
+const corsOrigin = originsEnv === '*' 
+  ? '*' 
+  : originsEnv 
+    ? originsEnv.split(',') 
+    : ['http://localhost:3000', 'http://localhost:3001'];
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 
 db.init().then(() => {
