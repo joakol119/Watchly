@@ -18,6 +18,15 @@ Buscá, guardá y organizá todo el contenido que querés ver — en un solo lug
 
 ---
 
+## 📸 Screenshots
+
+![Landing](screenshots/landing.png)
+![Home](screenshots/home.png)
+![Búsqueda](screenshots/search.png)
+![Mi lista](screenshots/list.png)
+
+---
+
 ## ✨ Características
 
 - 🔐 **Autenticación** — Registro e inicio de sesión con JWT
