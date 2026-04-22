@@ -47,30 +47,20 @@ export default function Landing() {
           <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, letterSpacing: 1, color: '#fff' }}>Watchly</span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-nav" onClick={() => router.push('/login')}>Iniciar sesión</button>
-          <button className="btn-primary" style={{ padding: '9px 20px', fontSize: 14 }} onClick={() => router.push('/login')}>Empezar gratis</button>
+          <button className="btn-nav" onClick={() => router.push('/login?mode=login')}>Iniciar sesión</button>
+          <button className="btn-primary" style={{ padding: '9px 20px', fontSize: 14 }} onClick={() => router.push('/login?mode=register')}>Empezar gratis</button>
         </div>
       </nav>
 
       {/* Hero */}
       <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '120px 24px 80px', position: 'relative' }}>
-        {/* Background glow effects */}
         <div style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(229,9,20,0.08) 0%, transparent 70%)', top: '50%', left: '50%', transform: 'translate(-50%, -60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%)', top: '30%', left: '20%', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(229,9,20,0.05) 0%, transparent 70%)', bottom: '20%', right: '15%', pointerEvents: 'none' }} />
 
-        {/* Floating movie posters decoration */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', opacity: 0.06 }}>
           {['🎬','🎭','🎥','📽️','🍿','🎞️','🏆','⭐'].map((emoji, i) => (
-            <div key={i} style={{
-              position: 'absolute',
-              fontSize: `${24 + (i % 3) * 12}px`,
-              left: `${10 + (i * 11) % 80}%`,
-              top: `${15 + (i * 17) % 70}%`,
-              animation: `float ${3 + i * 0.5}s ease-in-out infinite`,
-              animationDelay: `${i * 0.3}s`,
-              filter: 'grayscale(1)',
-            }}>{emoji}</div>
+            <div key={i} style={{ position: 'absolute', fontSize: `${24 + (i % 3) * 12}px`, left: `${10 + (i * 11) % 80}%`, top: `${15 + (i * 17) % 70}%`, animation: `float ${3 + i * 0.5}s ease-in-out infinite`, animationDelay: `${i * 0.3}s`, filter: 'grayscale(1)' }}>{emoji}</div>
           ))}
         </div>
 
@@ -90,17 +80,12 @@ export default function Landing() {
         </p>
 
         <div className="anim-4" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button className="btn-primary" onClick={() => router.push('/login')}>Crear cuenta gratis →</button>
-          <button className="btn-secondary" onClick={() => router.push('/login')}>Iniciar sesión</button>
+          <button className="btn-primary" onClick={() => router.push('/login?mode=register')}>Crear cuenta gratis →</button>
+          <button className="btn-secondary" onClick={() => router.push('/login?mode=login')}>Iniciar sesión</button>
         </div>
 
-        {/* Stats */}
         <div className="anim-4" style={{ display: 'flex', gap: 48, marginTop: 72, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {[
-            { value: '1M+', label: 'Títulos en TMDB' },
-            { value: '3', label: 'Estados de seguimiento' },
-            { value: '100%', label: 'Gratis' },
-          ].map(stat => (
+          {[{ value: '1M+', label: 'Títulos en TMDB' }, { value: '3', label: 'Estados de seguimiento' }, { value: '100%', label: 'Gratis' }].map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, letterSpacing: 1, color: '#fff', lineHeight: 1 }}>{stat.value}</div>
               <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>{stat.label}</div>
@@ -109,7 +94,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Divider */}
       <div style={{ maxWidth: 1100, margin: '0 auto', height: 1, background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent)' }} />
 
       {/* Features */}
@@ -118,10 +102,9 @@ export default function Landing() {
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: '#e50914', marginBottom: 14 }}>Características</p>
           <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 400, letterSpacing: 1, color: '#fff' }}>Todo lo que necesitás</h2>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-          {features.map((f, i) => (
-            <div key={f.title} className="feature-card" style={{ animationDelay: `${i * 0.1}s` }}>
+          {features.map(f => (
+            <div key={f.title} className="feature-card">
               <div style={{ fontSize: 36, marginBottom: 18 }}>{f.icon}</div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', marginBottom: 10 }}>{f.title}</h3>
               <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7 }}>{f.desc}</p>
@@ -139,7 +122,7 @@ export default function Landing() {
           <p style={{ fontSize: 15, color: '#64748b', marginBottom: 32, lineHeight: 1.7 }}>
             Creá tu cuenta gratis y empezá a organizar todo lo que querés ver.
           </p>
-          <button className="btn-primary" style={{ fontSize: 16, padding: '15px 40px' }} onClick={() => router.push('/login')}>
+          <button className="btn-primary" style={{ fontSize: 16, padding: '15px 40px' }} onClick={() => router.push('/login?mode=register')}>
             Crear cuenta gratis →
           </button>
         </div>
