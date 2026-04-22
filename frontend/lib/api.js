@@ -38,4 +38,8 @@ export const api = {
   updateWatchlist: (id, status) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   reorderWatchlist: (items) => request('/watchlist/reorder', { method: 'PATCH', body: JSON.stringify({ items }) }),
   removeFromWatchlist: (id) => request(`/watchlist/${id}`, { method: 'DELETE' }),
+  getProfile: () => request('/profile'),
+  updateName: (name) => request('/profile/name', { method: 'PATCH', body: JSON.stringify({ name }) }),
+  updateAvatar: (avatar_key) => request('/profile/avatar', { method: 'PATCH', body: JSON.stringify({ avatar_key }) }),
+  updatePassword: (currentPassword, newPassword) => request('/profile/password', { method: 'PATCH', body: JSON.stringify({ currentPassword, newPassword }) }),
 };

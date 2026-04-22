@@ -31,10 +31,9 @@ async function init() {
     )
   `);
 
-  // Migración: agregar columna position si no existe
-  await query(`
-    ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0
-  `);
+  await query(`ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT DEFAULT 'red'`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_key TEXT DEFAULT 'cool'`);
 
   console.log('Database initialized');
 }
