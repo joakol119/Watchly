@@ -40,7 +40,7 @@ export default function Navbar({ user }) {
         </div>
       </div>
 
-      <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 320 }}>
+     <form onSubmit={handleSearch} style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 360 }}>
         <input value={query} onChange={e => setQuery(e.target.value)}
           placeholder="🔍 Buscar películas y series..."
           style={{ width: '100%', padding: '8px 14px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f1f5f9', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
