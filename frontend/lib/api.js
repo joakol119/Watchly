@@ -27,6 +27,12 @@ export const api = {
   search: (q) => request(`/tmdb/search?q=${encodeURIComponent(q)}`),
   getMovie: (id) => request(`/tmdb/movie/${id}`),
   getTv: (id) => request(`/tmdb/tv/${id}`),
+  getRandom: (type, genre_id, min_rating) => {
+    const params = new URLSearchParams({ type });
+    if (genre_id) params.append('genre_id', genre_id);
+    if (min_rating) params.append('min_rating', min_rating);
+    return request(`/tmdb/random?${params.toString()}`);
+  },
   getWatchlist: () => request('/watchlist'),
   addToWatchlist: (data) => request('/watchlist', { method: 'POST', body: JSON.stringify(data) }),
   updateWatchlist: (id, status) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),

@@ -5,15 +5,36 @@ import { api } from '../../lib/api';
 import Navbar from '../../components/Navbar';
 import MediaCard from '../../components/MediaCard';
 
-const SUGGESTIONS = ['The Boys', 'Breaking Bad', 'Inception', 'One Piece', 'Interstellar', 'Stranger Things', 'The Batman', 'Dune'];
+const GENRES = [
+  { label: '😂 Comedia',          type: 'movie', genre_id: 35 },
+  { label: '💕 Romance',          type: 'movie', genre_id: 10749 },
+  { label: '😱 Terror',           type: 'movie', genre_id: 27 },
+  { label: '🦸 Acción',           type: 'movie', genre_id: 28 },
+  { label: '🔍 Thriller',         type: 'movie', genre_id: 53 },
+  { label: '🚀 Ciencia ficción',  type: 'movie', genre_id: 878 },
+  { label: '🧪 Drama',            type: 'tv',    genre_id: 18 },
+  { label: '🕵️ Crimen',          type: 'tv',    genre_id: 80 },
+  { label: '🌌 Fantasía',         type: 'movie', genre_id: 14 },
+  { label: '📺 Animación',        type: 'tv',    genre_id: 16 },
+];
+
+const RATING_OPTIONS = [
+  { value: 0,   label: 'Cualquiera' },
+  { value: 6,   label: '6+ ⭐' },
+  { value: 7,   label: '7+ ⭐' },
+  { value: 8,   label: '8+ ⭐' },
+];
 
 function SearchContent() {
   const [results, setResults] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [randomLoading, setRandomLoading] = useState(null);
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState(false);
+  const [activeGenre, setActiveGenre] = useState(null);
+  const [minRating, setMinRating] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -23,7 +44,6 @@ function SearchContent() {
     const u = localStorage.getItem('user');
     if (u) setUser(JSON.parse(u));
     api.getWatchlist().then(setWatchlist).catch(console.error);
-
     const q = searchParams.get('q');
     if (q) { setQuery(q); doSearch(q); }
   }, [searchParams]);
@@ -32,6 +52,7 @@ function SearchContent() {
     if (!q.trim()) return;
     setLoading(true);
     setSearched(true);
+    setActiveGenre(null);
     try {
       const data = await api.search(q);
       setResults((data.results || []).filter(r => r.media_type !== 'person'));
@@ -42,6 +63,31 @@ function SearchContent() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (query.trim()) router.push(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleGenre = async (genre) => {
+    setActiveGenre(genre.label);
+    setSearched(true);
+    setLoading(true);
+    setQuery('');
+    try {
+      const pages = await Promise.all([1, 2, 3].map(p =>
+        fetch(`https://api.themoviedb.org/3/discover/${genre.type}?with_genres=${genre.genre_id}&sort_by=popularity.desc&page=${p}&language=es-ES&api_key=254a5d35a19b09f1b9e403cf412a6c17`)
+          .then(r => r.json())
+      ));
+      const all = pages.flatMap(p => p.results || []).filter(r => r.poster_path);
+      setResults(all.map(r => ({ ...r, media_type: genre.type })));
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const handleRandom = async (type) => {
+    setRandomLoading(type);
+    try {
+      const result = await api.getRandom(type, null, minRating || null);
+      router.push(`/${type}/${result.id}`);
+    } catch (err) { console.error(err); }
+    finally { setRandomLoading(null); }
   };
 
   const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));
@@ -63,93 +109,109 @@ function SearchContent() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap');
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .search-input:focus { border-color: rgba(229,9,20,0.5) !important; box-shadow: 0 0 0 3px rgba(229,9,20,0.1) !important; }
         .search-input::placeholder { color: #334155; }
-        .suggestion-btn:hover { background: rgba(229,9,20,0.15) !important; border-color: rgba(229,9,20,0.3) !important; color: #f87171 !important; }
-        .search-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(229,9,20,0.4) !important; }
+        .genre-btn:hover { border-color: rgba(229,9,20,0.4) !important; background: rgba(229,9,20,0.1) !important; color: #f87171 !important; }
+        .random-btn:hover { transform: translateY(-2px); }
+        .rating-btn:hover { border-color: rgba(251,191,36,0.4) !important; background: rgba(251,191,36,0.1) !important; color: #fbbf24 !important; }
       `}</style>
 
       <Navbar user={user} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 32px 80px' }}>
 
-        {/* Search bar — centrado si no hay resultados */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: hasResults ? '0 0 40px' : '80px 0 0',
-          transition: 'padding 0.3s ease',
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: hasResults ? '0 0 48px' : '60px 0 0' }}>
           {!hasResults && !searched && (
-            <div style={{ textAlign: 'center', marginBottom: 40, animation: 'fadeUp 0.5s ease forwards' }}>
+            <div style={{ textAlign: 'center', marginBottom: 36, animation: 'fadeUp 0.5s ease forwards' }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#e50914', marginBottom: 12 }}>Explorar</p>
               <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 400, letterSpacing: 1, color: '#fff', marginBottom: 8 }}>
                 ¿Qué querés ver hoy?
               </h1>
-              <p style={{ fontSize: 14, color: '#475569' }}>Buscá cualquier película o serie en la base de datos de TMDB</p>
+              <p style={{ fontSize: 14, color: '#475569' }}>Buscá por título, elegí un género o dejate sorprender</p>
             </div>
           )}
 
           {hasResults && (
-            <div style={{ width: '100%', marginBottom: 8 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#e50914', marginBottom: 4 }}>Resultados</p>
+            <div style={{ width: '100%', marginBottom: 12 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#e50914', marginBottom: 4 }}>
+                {activeGenre ? activeGenre : 'Resultados'}
+              </p>
               <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, fontWeight: 400, letterSpacing: 1, color: '#fff' }}>
-                {results.length} resultados para "{query}"
+                {activeGenre ? `${results.length} títulos` : `${results.length} resultados para "${query}"`}
               </h1>
             </div>
           )}
 
+          {/* Buscador */}
           <form onSubmit={handleSearch} style={{ width: '100%', maxWidth: 640, display: 'flex', gap: 10 }}>
             <input
               className="search-input"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Buscar películas, series..."
-              style={{
-                flex: 1, padding: '14px 20px', borderRadius: 14,
-                border: '1.5px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: '#f1f5f9', fontSize: 15, outline: 'none',
-                fontFamily: 'inherit', transition: 'all 0.2s',
-              }}
+              placeholder="Buscar por título..."
+              style={{ flex: 1, padding: '14px 20px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f1f5f9', fontSize: 15, outline: 'none', fontFamily: 'inherit', transition: 'all 0.2s' }}
               autoFocus
             />
-            <button
-              type="submit"
-              className="search-btn"
-              style={{
-                padding: '14px 28px', borderRadius: 14, border: 'none',
-                background: 'linear-gradient(135deg, #e50914, #b81c1c)',
-                color: '#fff', fontWeight: 700, cursor: 'pointer',
-                fontSize: 15, fontFamily: 'inherit', transition: 'all 0.2s',
-                boxShadow: '0 4px 16px rgba(229,9,20,0.3)',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <button type="submit" style={{ padding: '14px 28px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, #e50914, #b81c1c)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(229,9,20,0.3)', whiteSpace: 'nowrap' }}>
               Buscar
             </button>
           </form>
 
-          {/* Sugerencias — solo cuando no hay resultados */}
-          {!searched && (
-            <div style={{ marginTop: 24, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 640, animation: 'fadeUp 0.5s ease 0.1s both' }}>
-              {SUGGESTIONS.map(s => (
+          {/* Géneros */}
+          <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 680, animation: 'fadeUp 0.5s ease 0.1s both' }}>
+            {GENRES.map(g => (
+              <button key={g.label} className="genre-btn" onClick={() => handleGenre(g)} style={{ padding: '7px 16px', borderRadius: 999, border: `1px solid ${activeGenre === g.label ? 'rgba(229,9,20,0.5)' : 'rgba(255,255,255,0.1)'}`, background: activeGenre === g.label ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.04)', color: activeGenre === g.label ? '#f87171' : '#64748b', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Separador random */}
+          <div style={{ marginTop: 28, width: '100%', maxWidth: 640, animation: 'fadeUp 0.5s ease 0.15s both' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#334155' }}>Sorprendeme</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+
+            {/* Filtro de puntuación */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>Puntuación mínima:</span>
+              {RATING_OPTIONS.map(r => (
                 <button
-                  key={s}
-                  className="suggestion-btn"
-                  onClick={() => router.push(`/search?q=${encodeURIComponent(s)}`)}
+                  key={r.value}
+                  className="rating-btn"
+                  onClick={() => setMinRating(r.value)}
                   style={{
-                    padding: '6px 16px', borderRadius: 999,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.04)',
-                    color: '#64748b', fontSize: 13, fontWeight: 500,
-                    cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+                    padding: '5px 14px', borderRadius: 999,
+                    border: `1px solid ${minRating === r.value ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    background: minRating === r.value ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: minRating === r.value ? '#fbbf24' : '#475569',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
                   }}
                 >
-                  {s}
+                  {r.label}
                 </button>
               ))}
             </div>
-          )}
+
+            {/* Botones random */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="random-btn" onClick={() => handleRandom('movie')} disabled={!!randomLoading} style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid rgba(229,9,20,0.3)', background: 'rgba(229,9,20,0.08)', color: '#f87171', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 8, opacity: randomLoading && randomLoading !== 'movie' ? 0.5 : 1 }}>
+                {randomLoading === 'movie'
+                  ? <><div style={{ width: 14, height: 14, border: '2px solid rgba(248,113,113,0.3)', borderTop: '2px solid #f87171', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Buscando...</>
+                  : '🎲 Película al azar'
+                }
+              </button>
+              <button className="random-btn" onClick={() => handleRandom('tv')} disabled={!!randomLoading} style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.08)', color: '#a5b4fc', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 8, opacity: randomLoading && randomLoading !== 'tv' ? 0.5 : 1 }}>
+                {randomLoading === 'tv'
+                  ? <><div style={{ width: 14, height: 14, border: '2px solid rgba(165,180,252,0.3)', borderTop: '2px solid #a5b4fc', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Buscando...</>
+                  : '🎲 Serie al azar'
+                }
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Loading */}
@@ -165,9 +227,7 @@ function SearchContent() {
         {isEmpty && (
           <div style={{ textAlign: 'center', padding: '60px 24px', animation: 'fadeUp 0.4s ease forwards' }}>
             <div style={{ fontSize: 56, marginBottom: 16 }}>🔍</div>
-            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, fontWeight: 400, letterSpacing: 1, marginBottom: 8, color: '#fff' }}>
-              Sin resultados
-            </h3>
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, fontWeight: 400, letterSpacing: 1, marginBottom: 8, color: '#fff' }}>Sin resultados</h3>
             <p style={{ color: '#475569', fontSize: 15 }}>No encontramos nada para "{query}"</p>
           </div>
         )}
@@ -176,7 +236,7 @@ function SearchContent() {
         {hasResults && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 20 }}>
             {results.map((item, i) => (
-              <div key={item.id} style={{ animation: 'fadeUp 0.4s ease forwards', animationDelay: `${i * 0.03}s`, opacity: 0 }}>
+              <div key={`${item.id}-${i}`} style={{ animation: 'fadeUp 0.4s ease forwards', animationDelay: `${i * 0.02}s`, opacity: 0 }}>
                 <MediaCard item={item} onAdd={handleAdd} watchlistMap={watchlistMap} />
               </div>
             ))}

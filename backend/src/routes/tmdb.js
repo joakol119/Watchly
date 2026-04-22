@@ -25,6 +25,20 @@ router.get('/search', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/random', auth, async (req, res) => {
+  const { type = 'movie', genre_id, min_rating = 0 } = req.query;
+  try {
+    const randomPage = Math.floor(Math.random() * 10) + 1;
+    const genreParam = genre_id ? `&with_genres=${genre_id}` : '';
+    const ratingParam = min_rating > 0 ? `&vote_average.gte=${min_rating}&vote_count.gte=100` : '';
+    const data = await tmdb(`/discover/${type}?sort_by=popularity.desc&page=${randomPage}${genreParam}${ratingParam}&`);
+    const results = (data.results || []).filter(r => r.poster_path);
+    if (!results.length) return res.status(404).json({ error: 'No se encontraron resultados' });
+    const random = results[Math.floor(Math.random() * results.length)];
+    res.json({ ...random, media_type: type });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/movie/:id', auth, async (req, res) => {
   try {
     const [details, credits, videos, similar] = await Promise.all([
