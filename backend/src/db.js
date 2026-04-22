@@ -25,10 +25,17 @@ async function init() {
       title TEXT NOT NULL,
       poster_path TEXT,
       status TEXT DEFAULT 'want_to_watch',
+      position INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(user_id, tmdb_id, media_type)
     )
   `);
+
+  // Migración: agregar columna position si no existe
+  await query(`
+    ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0
+  `);
+
   console.log('Database initialized');
 }
 
