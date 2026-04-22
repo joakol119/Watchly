@@ -42,4 +42,5 @@ export const api = {
   updateName: (name) => request('/profile/name', { method: 'PATCH', body: JSON.stringify({ name }) }),
   updateAvatar: (avatar_key) => request('/profile/avatar', { method: 'PATCH', body: JSON.stringify({ avatar_key }) }),
   updatePassword: (currentPassword, newPassword) => request('/profile/password', { method: 'PATCH', body: JSON.stringify({ currentPassword, newPassword }) }),
+  getStats: () => request('/stats'),
 };

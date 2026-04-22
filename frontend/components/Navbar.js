@@ -23,6 +23,7 @@ export default function Navbar({ user }) {
     { href: '/home', label: 'Inicio' },
     { href: '/search', label: 'Buscar' },
     { href: '/watchlist', label: 'Mi lista' },
+    { href: '/stats', label: 'Estadísticas' },
   ];
 
   const isSearchPage = pathname === '/search';

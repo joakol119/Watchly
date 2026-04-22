@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import Navbar from '../../components/Navbar';
@@ -7,14 +7,18 @@ import MediaCard from '../../components/MediaCard';
 import { useToast } from '../../components/Toast';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
+const PAGE_SIZE = 12;
 
 export default function HomePage() {
   const [trending, setTrending] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+  const loaderRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -28,6 +32,27 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Intersection Observer para scroll infinito
+  const handleObserver = useCallback((entries) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && !loadingMore) {
+      const rest = trending.filter(item => item !== featured);
+      if (visibleCount < rest.length) {
+        setLoadingMore(true);
+        setTimeout(() => {
+          setVisibleCount(prev => Math.min(prev + PAGE_SIZE, rest.length));
+          setLoadingMore(false);
+        }, 400);
+      }
+    }
+  }, [loadingMore, visibleCount, trending]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [handleObserver]);
+
   const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));
 
   const handleAdd = async (item, type) => {
@@ -40,9 +65,7 @@ export default function HomePage() {
       });
       setWatchlist(prev => [...prev, added]);
       addToast(`"${item.title || item.name}" agregado a tu lista`);
-    } catch (err) {
-      addToast('No se pudo agregar a la lista', 'error');
-    }
+    } catch (err) { addToast('No se pudo agregar a la lista', 'error'); }
   };
 
   const handleRemove = async (watchlistItem) => {
@@ -50,13 +73,13 @@ export default function HomePage() {
       await api.removeFromWatchlist(watchlistItem.id);
       setWatchlist(prev => prev.filter(w => w.id !== watchlistItem.id));
       addToast(`"${watchlistItem.title}" quitado de tu lista`, 'error');
-    } catch (err) {
-      addToast('No se pudo quitar de la lista', 'error');
-    }
+    } catch (err) { addToast('No se pudo quitar de la lista', 'error'); }
   };
 
   const featured = trending.find(item => item.backdrop_path);
-  const rest = trending.filter(item => item !== featured).slice(0, 18);
+  const rest = trending.filter(item => item !== featured);
+  const visible = rest.slice(0, visibleCount);
+  const hasMore = visibleCount < rest.length;
 
   return (
     <div style={{ minHeight: '100vh', background: '#080810', fontFamily: "'Inter', system-ui, sans-serif", color: '#f1f5f9' }}>
@@ -64,6 +87,7 @@ export default function HomePage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap');
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .featured-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(229,9,20,0.5) !important; }
         .featured-btn-secondary:hover { background: rgba(255,255,255,0.15) !important; }
       `}</style>
@@ -88,15 +112,14 @@ export default function HomePage() {
               <img src={`${IMG_BASE}w1280${featured.backdrop_path}`} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,16,0.95) 35%, rgba(8,8,16,0.6) 60%, rgba(8,8,16,0.2) 100%)' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #080810 0%, transparent 40%)' }} />
-
               <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: '100%', display: 'flex', alignItems: 'center' }}>
                 <div style={{ maxWidth: 520, animation: 'fadeUp 0.6s ease forwards' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                     <span style={{ background: featured.media_type === 'movie' ? 'rgba(229,9,20,0.2)' : 'rgba(99,102,241,0.2)', border: `1px solid ${featured.media_type === 'movie' ? 'rgba(229,9,20,0.4)' : 'rgba(99,102,241,0.4)'}`, color: featured.media_type === 'movie' ? '#f87171' : '#a5b4fc', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
                       {featured.media_type === 'movie' ? 'PELÍCULA' : 'SERIE'}
                     </span>
-                    {featured.vote_average > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 700, color: '#fbbf24' }}>⭐ {featured.vote_average.toFixed(1)}</span>}
-                    <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>#1 en tendencias</span>
+                    {featured.vote_average > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24' }}>⭐ {featured.vote_average.toFixed(1)}</span>}
+                    <span style={{ fontSize: 13, color: '#475569' }}>#1 en tendencias</span>
                   </div>
                   <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 400, lineHeight: 0.95, letterSpacing: 1, marginBottom: 16, color: '#fff' }}>
                     {featured.title || featured.name}
@@ -129,14 +152,28 @@ export default function HomePage() {
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#e50914', marginBottom: 4 }}>Esta semana</p>
                 <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, fontWeight: 400, letterSpacing: 1, color: '#f1f5f9' }}>🔥 En tendencia</h2>
               </div>
-              <span style={{ fontSize: 13, color: '#475569' }}>{rest.length} títulos</span>
+              <span style={{ fontSize: 13, color: '#475569' }}>{visible.length} de {rest.length} títulos</span>
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 20 }}>
-              {rest.map((item, i) => (
-                <div key={item.id} style={{ animation: `fadeUp 0.4s ease forwards`, animationDelay: `${i * 0.03}s`, opacity: 0 }}>
+              {visible.map((item, i) => (
+                <div key={item.id} style={{ animation: `fadeUp 0.4s ease forwards`, animationDelay: `${(i % PAGE_SIZE) * 0.03}s`, opacity: 0 }}>
                   <MediaCard item={item} onAdd={handleAdd} onRemove={handleRemove} watchlistMap={watchlistMap} />
                 </div>
               ))}
+            </div>
+
+            {/* Loader trigger */}
+            <div ref={loaderRef} style={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 20 }}>
+              {loadingMore && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#475569', fontSize: 14 }}>
+                  <div style={{ width: 20, height: 20, border: '2px solid rgba(229,9,20,0.2)', borderTop: '2px solid #e50914', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  Cargando más...
+                </div>
+              )}
+              {!hasMore && !loading && visible.length > 0 && (
+                <p style={{ fontSize: 13, color: '#334155' }}>— Fin de las tendencias —</p>
+              )}
             </div>
           </div>
         </>

@@ -21,6 +21,7 @@ db.init().then(() => {
   app.use('/watchlist', require('./routes/watchlist'));
   app.use('/tmdb', require('./routes/tmdb'));
   app.use('/profile', require('./routes/profile'));
+  app.use('/stats', require('./routes/stats'));
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
   app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }).catch(err => {
