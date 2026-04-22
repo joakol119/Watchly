@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import Navbar from '../../components/Navbar';
+import { useToast } from '../../components/Toast';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -18,9 +19,8 @@ export default function WatchlistPage() {
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [hoveredId, setHoveredId] = useState(null);
-  const [dragId, setDragId] = useState(null);
-  const [dragOverId, setDragOverId] = useState(null);
   const router = useRouter();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -35,53 +35,19 @@ export default function WatchlistPage() {
     try {
       const updated = await api.updateWatchlist(item.id, status);
       setWatchlist(prev => prev.map(w => w.id === item.id ? updated : w));
-    } catch (err) { console.error(err); }
+      const labels = { want_to_watch: 'Quiero ver', watching: 'Viendo', watched: 'Visto' };
+      addToast(`"${item.title}" → ${labels[status]}`);
+    } catch (err) { addToast('No se pudo actualizar el estado', 'error'); }
   };
 
   const handleRemove = async (e, id) => {
     e.stopPropagation();
+    const item = watchlist.find(w => w.id === id);
     try {
       await api.removeFromWatchlist(id);
       setWatchlist(prev => prev.filter(w => w.id !== id));
-    } catch (err) { console.error(err); }
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (e, id) => {
-    setDragId(id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e, id) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (id !== dragId) setDragOverId(id);
-  };
-
-  const handleDrop = async (e, targetId) => {
-    e.preventDefault();
-    if (dragId === targetId) return;
-
-    const newList = [...watchlist];
-    const dragIndex = newList.findIndex(w => w.id === dragId);
-    const targetIndex = newList.findIndex(w => w.id === targetId);
-
-    const [dragged] = newList.splice(dragIndex, 1);
-    newList.splice(targetIndex, 0, dragged);
-
-    const withPositions = newList.map((item, i) => ({ ...item, position: i }));
-    setWatchlist(withPositions);
-    setDragId(null);
-    setDragOverId(null);
-
-    try {
-      await api.reorderWatchlist(withPositions.map(({ id, position }) => ({ id, position })));
-    } catch (err) { console.error(err); }
-  };
-
-  const handleDragEnd = () => {
-    setDragId(null);
-    setDragOverId(null);
+      addToast(`"${item?.title}" eliminado de tu lista`, 'error');
+    } catch (err) { addToast('No se pudo eliminar', 'error'); }
   };
 
   const filtered = filter === 'all' ? watchlist : watchlist.filter(w => w.status === filter);
@@ -107,11 +73,9 @@ export default function WatchlistPage() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .card-overlay { opacity: 0; transition: opacity 0.25s ease; }
         .watchlist-card:hover .card-overlay { opacity: 1; }
-        .watchlist-card:hover { box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important; }
+        .watchlist-card:hover { transform: translateY(-6px) !important; box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important; }
         .filter-btn:hover { background: rgba(255,255,255,0.08) !important; }
         .status-option:hover { background: rgba(255,255,255,0.1) !important; }
-        .drag-hint { opacity: 0; transition: opacity 0.2s; }
-        .watchlist-card:hover .drag-hint { opacity: 1; }
       `}</style>
 
       <Navbar user={user} />
@@ -160,13 +124,6 @@ export default function WatchlistPage() {
           ))}
         </div>
 
-        {/* Drag hint */}
-        {filtered.length > 1 && (
-          <p style={{ fontSize: 12, color: '#334155', marginBottom: 20 }}>
-            ⠿ Arrastrá las cards para reordenar tu lista
-          </p>
-        )}
-
         {/* Content */}
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 20 }}>
@@ -185,7 +142,7 @@ export default function WatchlistPage() {
             </p>
             <button
               onClick={() => filter === 'all' ? router.push('/home') : setFilter('all')}
-              style={{ padding: '12px 28px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #e50914, #b81c1c)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14 }}
+              style={{ padding: '12px 28px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #e50914, #b81c1c)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, boxShadow: '0 4px 16px rgba(229,9,20,0.3)' }}
             >
               {filter === 'all' ? 'Explorar tendencias' : 'Ver todo'}
             </button>
@@ -194,36 +151,22 @@ export default function WatchlistPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 20 }}>
             {filtered.map((item, i) => {
               const statusInfo = STATUS_OPTIONS.find(s => s.value === item.status);
-              const isDragging = dragId === item.id;
-              const isDragOver = dragOverId === item.id;
-
+              const isHovered = hoveredId === item.id;
               return (
                 <div
                   key={item.id}
                   className="watchlist-card"
-                  draggable
-                  onDragStart={e => handleDragStart(e, item.id)}
-                  onDragOver={e => handleDragOver(e, item.id)}
-                  onDrop={e => handleDrop(e, item.id)}
-                  onDragEnd={handleDragEnd}
-                  onClick={() => !dragId && router.push(`/${item.media_type}/${item.tmdb_id}`)}
+                  onClick={() => router.push(`/${item.media_type}/${item.tmdb_id}`)}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
                     borderRadius: 14, overflow: 'hidden', background: '#141420',
-                    border: `1px solid ${isDragOver ? 'rgba(229,9,20,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                    cursor: 'grab', transition: 'all 0.2s', position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer',
+                    transition: 'all 0.25s', position: 'relative',
                     animation: `fadeUp 0.4s ease forwards`,
-                    animationDelay: `${i * 0.04}s`, opacity: isDragging ? 0.4 : 0,
-                    transform: isDragOver ? 'scale(1.03)' : 'scale(1)',
-                    boxShadow: isDragOver ? '0 0 0 2px rgba(229,9,20,0.4)' : 'none',
+                    animationDelay: `${i * 0.04}s`, opacity: 0,
                   }}
                 >
-                  {/* Drag handle indicator */}
-                  <div className="drag-hint" style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 10, background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 8px', fontSize: 10, color: '#94a3b8', pointerEvents: 'none' }}>
-                    ⠿ arrastrar
-                  </div>
-
                   {/* Poster */}
                   <div style={{ position: 'relative', paddingBottom: '150%', background: '#1e1e2e' }}>
                     {item.poster_path
@@ -237,7 +180,7 @@ export default function WatchlistPage() {
                     </div>
 
                     {/* Status badge */}
-                    <div style={{ position: 'absolute', top: 8, right: 8, background: statusInfo?.bg, border: `1px solid ${statusInfo?.border}`, color: statusInfo?.color, borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 700, transition: 'opacity 0.2s', opacity: hoveredId === item.id ? 0 : 1 }}>
+                    <div style={{ position: 'absolute', top: 8, right: 8, background: statusInfo?.bg, border: `1px solid ${statusInfo?.border}`, color: statusInfo?.color, borderRadius: 6, padding: '2px 8px', fontSize: 10, fontWeight: 700, transition: 'opacity 0.2s', opacity: isHovered ? 0 : 1 }}>
                       {statusInfo?.label}
                     </div>
 
@@ -265,14 +208,14 @@ export default function WatchlistPage() {
                       </div>
                       <button
                         onClick={e => handleRemove(e, item.id)}
-                        style={{ marginTop: 8, padding: '6px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)', color: '#f87171', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}
+                        style={{ marginTop: 8, padding: '6px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)', color: '#f87171', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit', transition: 'all 0.15s' }}
                       >
                         🗑 Eliminar
                       </button>
                     </div>
                   </div>
 
-                  {/* Title */}
+                  {/* Title below card */}
                   <div style={{ padding: '10px 12px' }}>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#e2e8f0', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>{item.title}</p>
                   </div>

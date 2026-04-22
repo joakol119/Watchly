@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import Navbar from '../../../components/Navbar';
 import MediaCard from '../../../components/MediaCard';
+import { useToast } from '../../../components/Toast';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
 
@@ -21,6 +22,7 @@ export default function MoviePage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { id } = useParams();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -43,14 +45,17 @@ export default function MoviePage() {
       const added = await api.addToWatchlist({ tmdb_id: movie.id, media_type: 'movie', title: movie.title, poster_path: movie.poster_path });
       setWatchlistItem(added);
       setWatchlist(prev => [...prev, added]);
-    } catch (err) { console.error(err); }
+      addToast(`"${movie.title}" agregado a tu lista`);
+    } catch (err) { addToast('No se pudo agregar a la lista', 'error'); }
   };
 
   const handleStatus = async (status) => {
     try {
       const updated = await api.updateWatchlist(watchlistItem.id, status);
       setWatchlistItem(updated);
-    } catch (err) { console.error(err); }
+      const labels = { want_to_watch: 'Quiero ver', watching: 'Viendo', watched: 'Visto' };
+      addToast(`Estado actualizado a "${labels[status]}"`);
+    } catch (err) { addToast('No se pudo actualizar el estado', 'error'); }
   };
 
   const handleAddSimilar = async (item, type) => {
@@ -58,7 +63,8 @@ export default function MoviePage() {
     try {
       const added = await api.addToWatchlist({ tmdb_id: item.id, media_type: type, title: item.title || item.name, poster_path: item.poster_path });
       setWatchlist(prev => [...prev, added]);
-    } catch (err) { console.error(err); }
+      addToast(`"${item.title || item.name}" agregado a tu lista`);
+    } catch (err) { addToast('No se pudo agregar a la lista', 'error'); }
   };
 
   const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));

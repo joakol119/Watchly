@@ -45,6 +45,16 @@ export default function HomePage() {
     }
   };
 
+  const handleRemove = async (watchlistItem) => {
+    try {
+      await api.removeFromWatchlist(watchlistItem.id);
+      setWatchlist(prev => prev.filter(w => w.id !== watchlistItem.id));
+      addToast(`"${watchlistItem.title}" quitado de tu lista`, 'error');
+    } catch (err) {
+      addToast('No se pudo quitar de la lista', 'error');
+    }
+  };
+
   const featured = trending.find(item => item.backdrop_path);
   const rest = trending.filter(item => item !== featured).slice(0, 18);
 
@@ -124,7 +134,7 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 20 }}>
               {rest.map((item, i) => (
                 <div key={item.id} style={{ animation: `fadeUp 0.4s ease forwards`, animationDelay: `${i * 0.03}s`, opacity: 0 }}>
-                  <MediaCard item={item} onAdd={handleAdd} watchlistMap={watchlistMap} />
+                  <MediaCard item={item} onAdd={handleAdd} onRemove={handleRemove} watchlistMap={watchlistMap} />
                 </div>
               ))}
             </div>
