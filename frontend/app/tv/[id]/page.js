@@ -7,6 +7,12 @@ import MediaCard from '../../../components/MediaCard';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
 
+const STATUS_OPTIONS = [
+  { value: 'want_to_watch', label: '🔖 Quiero ver' },
+  { value: 'watching', label: '▶️ Viendo' },
+  { value: 'watched', label: '✓ Visto' },
+];
+
 export default function TvPage() {
   const [show, setShow] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
@@ -48,8 +54,7 @@ export default function TvPage() {
   };
 
   const handleAddSimilar = async (item, type) => {
-    const key = `${type}-${item.id}`;
-    if (watchlistMap[key]) return;
+    if (watchlistMap[`${type}-${item.id}`]) return;
     try {
       const added = await api.addToWatchlist({ tmdb_id: item.id, media_type: type, title: item.title || item.name, poster_path: item.poster_path });
       setWatchlist(prev => [...prev, added]);
@@ -58,98 +63,207 @@ export default function TvPage() {
 
   const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));
 
-  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>Cargando...</div>;
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#080810', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 40, height: 40, border: '3px solid rgba(99,102,241,0.2)', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
   if (!show) return null;
 
   const trailer = show.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-  const cast = show.credits?.cast?.slice(0, 8) || [];
+  const cast = show.credits?.cast?.slice(0, 10) || [];
   const similar = (show.similar?.results || []).filter(s => s.poster_path).slice(0, 8);
+  const score = show.vote_average?.toFixed(1);
+  const scoreColor = score >= 7 ? '#22c55e' : score >= 5 ? '#f59e0b' : '#ef4444';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#080810', fontFamily: "'Inter', system-ui, sans-serif", color: '#f1f5f9' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
+        .cast-scroll::-webkit-scrollbar { height: 4px; }
+        .cast-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 2px; }
+        .cast-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.5); border-radius: 2px; }
+        .status-btn:hover { background: rgba(99,102,241,0.15) !important; color: #a5b4fc !important; }
+        .back-btn:hover { background: rgba(255,255,255,0.1) !important; }
+        .add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4) !important; }
+      `}</style>
+
       <Navbar user={user} />
 
+      {/* Hero backdrop */}
       {show.backdrop_path && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 0, opacity: 0.15 }}>
-          <img src={`${IMG_BASE}w1280${show.backdrop_path}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, #0a0a0f 100%)' }} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+          <img
+            src={`${IMG_BASE}w1280${show.backdrop_path}`}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #080810 40%, rgba(8,8,16,0.7) 70%, rgba(8,8,16,0.4) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(8,8,16,0) 50%, #080810 100%)' }} />
         </div>
       )}
 
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: '90px 24px 60px' }}>
-        <button onClick={() => router.back()} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#94a3b8', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', marginBottom: 32, fontSize: 14, fontFamily: 'inherit' }}>← Volver</button>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Hero section */}
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 32px 60px' }}>
+          <button
+            className="back-btn"
+            onClick={() => router.back()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', marginBottom: 40, transition: 'all 0.2s' }}
+          >
+            ← Volver
+          </button>
 
-        <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {show.poster_path && (
-            <img src={`${IMG_BASE}w400${show.poster_path}`} alt={show.name} style={{ width: 260, borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', flexShrink: 0 }} />
-          )}
-
-          <div style={{ flex: 1, minWidth: 280 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>SERIE</span>
-              {show.vote_average > 0 && <span style={{ color: '#fbbf24', fontWeight: 700 }}>⭐ {show.vote_average.toFixed(1)}</span>}
-            </div>
-            <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.1, marginBottom: 8 }}>{show.name}</h1>
-            <p style={{ color: '#64748b', fontSize: 14, marginBottom: 16 }}>
-              {show.first_air_date?.slice(0, 4)} · {show.number_of_seasons} temporada{show.number_of_seasons !== 1 ? 's' : ''} · {show.genres?.map(g => g.name).join(', ')}
-            </p>
-            <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>{show.overview}</p>
-
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {!watchlistItem ? (
-                <button onClick={handleAdd} style={{ padding: '11px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #e50914, #b81c1c)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>
-                  + Agregar a mi lista
-                </button>
-              ) : (
-                ['want_to_watch', 'watching', 'watched'].map(s => (
-                  <button key={s} onClick={() => handleStatus(s)} style={{ padding: '11px 16px', borderRadius: 10, border: 'none', background: watchlistItem.status === s ? 'rgba(229,9,20,0.25)' : 'rgba(255,255,255,0.06)', color: watchlistItem.status === s ? '#f87171' : '#94a3b8', fontWeight: 600, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
-                    {s === 'want_to_watch' ? 'Quiero ver' : s === 'watching' ? 'Viendo' : '✓ Visto'}
-                  </button>
-                ))
+          <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {/* Poster */}
+            <div style={{ flexShrink: 0, position: 'relative' }}>
+              {show.poster_path && (
+                <img
+                  src={`${IMG_BASE}w400${show.poster_path}`}
+                  alt={show.name}
+                  style={{ width: 280, borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.8)', display: 'block' }}
+                />
               )}
+              {score > 0 && (
+                <div style={{ position: 'absolute', bottom: -16, right: -16, width: 56, height: 56, borderRadius: '50%', background: '#080810', border: `3px solid ${scoreColor}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${scoreColor}40` }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{score}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div style={{ flex: 1, minWidth: 280, paddingTop: 8 }}>
+              {/* Badge */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '4px 12px', fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>
+                SERIE
+              </div>
+
+              {/* Title */}
+              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(48px, 6vw, 80px)', fontWeight: 400, lineHeight: 0.95, letterSpacing: '1px', marginBottom: 16, color: '#ffffff' }}>
+                {show.name}
+              </h1>
+
+              {/* Meta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+                {show.first_air_date && (
+                  <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>{show.first_air_date.slice(0, 4)}</span>
+                )}
+                {show.number_of_seasons > 0 && (
+                  <>
+                    <span style={{ color: '#334155' }}>·</span>
+                    <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+                      {show.number_of_seasons} temporada{show.number_of_seasons !== 1 ? 's' : ''}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Genres */}
+              {show.genres?.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                  {show.genres.map(g => (
+                    <span key={g.id} style={{ padding: '5px 14px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', fontSize: 12, fontWeight: 500, color: '#cbd5e1' }}>
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Overview */}
+              <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.75, marginBottom: 32, maxWidth: 560 }}>
+                {show.overview}
+              </p>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {!watchlistItem ? (
+                  <button
+                    className="add-btn"
+                    onClick={handleAdd}
+                    style={{ padding: '12px 28px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(99,102,241,0.3)' }}
+                  >
+                    + Agregar a mi lista
+                  </button>
+                ) : (
+                  STATUS_OPTIONS.map(s => (
+                    <button
+                      key={s.value}
+                      className="status-btn"
+                      onClick={() => handleStatus(s.value)}
+                      style={{
+                        padding: '12px 20px', borderRadius: 12, border: '1px solid',
+                        borderColor: watchlistItem.status === s.value ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)',
+                        background: watchlistItem.status === s.value ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)',
+                        color: watchlistItem.status === s.value ? '#a5b4fc' : '#64748b',
+                        fontWeight: 600, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', transition: 'all 0.2s',
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {trailer && (
-          <div style={{ marginTop: 48 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Trailer</h2>
-            <div style={{ borderRadius: 12, overflow: 'hidden', maxWidth: 700 }}>
-              <iframe width="100%" height="394" src={`https://www.youtube.com/embed/${trailer.key}`} frameBorder="0" allowFullScreen style={{ display: 'block' }} />
-            </div>
-          </div>
-        )}
+        {/* Content sections */}
+        <div style={{ background: '#080810' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px 80px' }}>
 
-        {cast.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Reparto</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 12 }}>
-              {cast.map(person => (
-                <div key={person.id} style={{ textAlign: 'center' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 8px', background: '#1e1e2e' }}>
-                    {person.profile_path
-                      ? <img src={`${IMG_BASE}w200${person.profile_path}`} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👤</div>
-                    }
-                  </div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{person.name}</p>
-                  <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>{person.character}</p>
+            {/* Trailer */}
+            {trailer && (
+              <section style={{ marginBottom: 64 }}>
+                <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#6366f1', marginBottom: 20 }}>Trailer</h2>
+                <div style={{ borderRadius: 16, overflow: 'hidden', maxWidth: 720, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+                  <iframe
+                    width="100%"
+                    height="405"
+                    src={`https://www.youtube.com/embed/${trailer.key}`}
+                    frameBorder="0"
+                    allowFullScreen
+                    style={{ display: 'block' }}
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </section>
+            )}
 
-        {similar.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Series similares</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
-              {similar.map(item => (
-                <MediaCard key={item.id} item={{ ...item, media_type: 'tv' }} onAdd={handleAddSimilar} watchlistMap={watchlistMap} />
-              ))}
-            </div>
+            {/* Cast */}
+            {cast.length > 0 && (
+              <section style={{ marginBottom: 64 }}>
+                <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#6366f1', marginBottom: 20 }}>Reparto</h2>
+                <div className="cast-scroll" style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 12 }}>
+                  {cast.map(person => (
+                    <div key={person.id} style={{ flexShrink: 0, width: 100, textAlign: 'center' }}>
+                      <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 10px', background: '#1e1e2e', border: '2px solid rgba(255,255,255,0.08)' }}>
+                        {person.profile_path
+                          ? <img src={`${IMG_BASE}w200${person.profile_path}`} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>👤</div>
+                        }
+                      </div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', margin: '0 0 3px', lineHeight: 1.3 }}>{person.name}</p>
+                      <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.3 }}>{person.character}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Similar */}
+            {similar.length > 0 && (
+              <section>
+                <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#6366f1', marginBottom: 20 }}>Series similares</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+                  {similar.map(item => (
+                    <MediaCard key={item.id} item={{ ...item, media_type: 'tv' }} onAdd={handleAddSimilar} watchlistMap={watchlistMap} />
+                  ))}
+                </div>
+              </section>
+            )}
+
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
