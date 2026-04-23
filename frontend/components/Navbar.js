@@ -96,16 +96,15 @@ export default function Navbar({ user }) {
         background: 'rgba(8,8,16,0.92)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
         padding: '0 20px', height: 64,
-        display: 'flex', alignItems: 'center', gap: 16,
+        display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
       }}>
 
         {/* Izquierda: Logo + links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-          <div onClick={() => navigate('/home')} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div onClick={() => navigate('/home')} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flexShrink: 0 }}>
             <div style={{ width: 24, height: 24, color: '#e50914' }}><FilmIcon /></div>
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: '.05em', color: '#fff' }}>Watchly</span>
           </div>
-
           <div className="nav-desktop-links" style={{ gap: 2 }}>
             {NAV_LINKS.map(link => {
               const active = pathname === link.href;
@@ -119,44 +118,44 @@ export default function Navbar({ user }) {
           </div>
         </div>
 
-        {/* Centro: Search (toma el espacio restante) */}
-        {!isSearchPage && (
-          <form className="nav-desktop-search" onSubmit={handleSearch} style={{ flex: 1, maxWidth: 300 }}>
+        {/* Centro exacto: Search */}
+        {!isSearchPage ? (
+          <form className="nav-desktop-search" onSubmit={handleSearch} style={{ width: 280 }}>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: '#475569', pointerEvents: 'none' }}><SearchIcon /></div>
               <input className="nav-search-input" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Buscar..."
+                placeholder="Buscar películas y series..."
                 style={{ width: '100%', padding: '8px 14px 8px 34px', borderRadius: 9, border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.05)', color: '#f1f5f9', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color .2s, background .2s' }} />
             </div>
           </form>
+        ) : (
+          <div />
         )}
 
-        {/* Espaciador cuando no hay search */}
-        {isSearchPage && <div style={{ flex: 1 }} />}
+        {/* Derecha: Avatar + Logout (desktop) / Avatar + Hamburger (mobile) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+          <div className="nav-desktop-logout" style={{ alignItems: 'center', gap: 10 }}>
+            {user && (
+              <Avatar avatarKey={user.avatar_key} size={34} onClick={() => router.push('/profile')}
+                style={{ border: pathname === '/profile' ? '2px solid rgba(229,9,20,.6)' : '2px solid transparent', transition: 'border-color .2s', cursor: 'pointer', borderRadius: '50%' }} />
+            )}
+            <button className="nav-logout" onClick={handleLogout}
+              style={{ background: 'none', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', transition: 'color .18s, border-color .18s', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ width: 14, height: 14 }}><LogOutIcon /></div>
+              Salir
+            </button>
+          </div>
 
-        {/* Derecha: Avatar + Logout (desktop) */}
-        <div className="nav-desktop-logout" style={{ alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {user && (
-            <Avatar avatarKey={user.avatar_key} size={34} onClick={() => router.push('/profile')}
-              style={{ border: pathname === '/profile' ? '2px solid rgba(229,9,20,.6)' : '2px solid transparent', transition: 'border-color .2s', cursor: 'pointer', borderRadius: '50%' }} />
-          )}
-          <button className="nav-logout" onClick={handleLogout}
-            style={{ background: 'none', border: '1px solid rgba(255,255,255,.08)', color: '#64748b', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', transition: 'color .18s, border-color .18s', display: 'flex', alignItems: 'center', gap: 7 }}>
-            <div style={{ width: 14, height: 14 }}><LogOutIcon /></div>
-            Salir
-          </button>
-        </div>
-
-        {/* Derecha: Avatar + Hamburger (mobile) */}
-        <div className="nav-hamburger" style={{ alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {user && (
-            <Avatar avatarKey={user.avatar_key} size={32} onClick={() => navigate('/profile')}
-              style={{ border: pathname === '/profile' ? '2px solid rgba(229,9,20,.6)' : '2px solid transparent', transition: 'border-color .2s', cursor: 'pointer', borderRadius: '50%' }} />
-          )}
-          <button onClick={() => setMenuOpen(p => !p)}
-            style={{ width: 36, height: 36, background: 'none', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-            {menuOpen ? <CloseIcon /> : <MenuIcon />}
-          </button>
+          <div className="nav-hamburger" style={{ alignItems: 'center', gap: 10 }}>
+            {user && (
+              <Avatar avatarKey={user.avatar_key} size={32} onClick={() => navigate('/profile')}
+                style={{ border: pathname === '/profile' ? '2px solid rgba(229,9,20,.6)' : '2px solid transparent', transition: 'border-color .2s', cursor: 'pointer', borderRadius: '50%' }} />
+            )}
+            <button onClick={() => setMenuOpen(p => !p)}
+              style={{ width: 36, height: 36, background: 'none', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+              {menuOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+          </div>
         </div>
       </nav>
 
