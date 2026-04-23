@@ -119,10 +119,10 @@ function SearchContent() {
 
   const watchlistMap = Object.fromEntries(watchlist.map(w => [`${w.media_type}-${w.tmdb_id}`, w]));
 
-  const handleAdd = async (item, type) => {
+  const handleAdd = async (item, type, status = 'want_to_watch') => {
     if (watchlistMap[`${type}-${item.id}`]) return;
     try {
-      const added = await api.addToWatchlist({ tmdb_id: item.id, media_type: type, title: item.title || item.name, poster_path: item.poster_path });
+      const added = await api.addToWatchlist({ tmdb_id: item.id, media_type: type, title: item.title || item.name, poster_path: item.poster_path, status });
       setWatchlist(prev => [...prev, added]);
       addToast(`"${item.title || item.name}" agregado a tu lista`);
     } catch (err) { addToast('No se pudo agregar', 'error'); }
