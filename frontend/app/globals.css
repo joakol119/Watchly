@@ -1,5 +1,21 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0a0f; color: #f1f5f9; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bebas+Neue&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080810;
+  color: #f1f5f9;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-track { background: #080810; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

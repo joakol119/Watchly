@@ -44,4 +44,12 @@ export const api = {
   updateAvatar: (avatar_key) => request('/profile/avatar', { method: 'PATCH', body: JSON.stringify({ avatar_key }) }),
   updatePassword: (currentPassword, newPassword) => request('/profile/password', { method: 'PATCH', body: JSON.stringify({ currentPassword, newPassword }) }),
   getStats: () => request('/stats'),
+  getRecommendations: () => request('/tmdb/recommendations'),
+  reviewWatchlist: (id, review) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ review }) }),
+  getLists: () => request('/lists'),
+  createList: (data) => request('/lists', { method: 'POST', body: JSON.stringify(data) }),
+  deleteList: (id) => request(`/lists/${id}`, { method: 'DELETE' }),
+  getList: (id) => request(`/lists/${id}`),
+  addToList: (listId, data) => request(`/lists/${listId}/items`, { method: 'POST', body: JSON.stringify(data) }),
+  removeFromList: (listId, itemId) => request(`/lists/${listId}/items/${itemId}`, { method: 'DELETE' }),
 };

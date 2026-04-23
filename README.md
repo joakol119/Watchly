@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 Watchly
+# Watchly
 
 **Tu lista personal de películas y series**
 
@@ -12,16 +12,16 @@ Buscá, guardá y organizá todo el contenido que querés ver — en un solo lug
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 [![TMDB](https://img.shields.io/badge/TMDB-API-01D277?style=flat-square&logo=themoviedatabase&logoColor=white)](https://www.themoviedb.org/)
 
-[Ver demo](https://watchly-lime.vercel.app) · [Reportar un bug](https://github.com/joakol119/Watchly/issues)
+[Ver demo en vivo](https://watchly-lime.vercel.app) · [Reportar un bug](https://github.com/joakol119/Watchly/issues)
 
 </div>
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ![Landing](screenshots/landing.png)
-![Home](screenshots/home.png)
+![Home](screenshots/Home.png)
 ![Búsqueda](screenshots/search.png)
 ![Detalle](screenshots/detail.png)
 ![Mi lista](screenshots/list.png)
@@ -30,21 +30,23 @@ Buscá, guardá y organizá todo el contenido que querés ver — en un solo lug
 
 ---
 
-## ✨ Características
+## Características
 
-- 🔐 **Autenticación** — Registro e inicio de sesión con JWT y confirmación de contraseña
-- 🔥 **Tendencias** — Películas y series más populares de la semana con hero featured
-- 🔍 **Búsqueda** — Búsqueda por título, filtrado por géneros, película/serie al azar con puntuación mínima
-- 🎭 **Detalle completo** — Sinopsis, reparto, calificación, trailer y títulos similares
-- 📋 **Watchlist personal** — Guardá, organizá con drag & drop y filtrá por estado
-- ⭐ **Calificación propia** — Ponele tu nota del 1 al 10 a lo que ya viste
-- 📊 **Estadísticas** — Tiempo total visto, géneros favoritos, distribución de contenido
-- 👤 **Perfil** — Editá tu nombre, elegí tu personaje avatar y cambiá tu contraseña
-- 🔔 **Notificaciones** — Toast notifications en todas las acciones
+- **Autenticación** — Registro e inicio de sesión con JWT, confirmación de contraseña y validación en tiempo real
+- **Tendencias** — Películas y series más populares de la semana con hero featured e infinite scroll
+- **Búsqueda** — Por título, filtrado por géneros, película o serie al azar con puntuación mínima configurable
+- **Detalle completo** — Sinopsis, reparto, calificación, trailer de YouTube, dónde ver (JustWatch) y títulos similares
+- **Watchlist personal** — Guardá, actualizá el estado (Quiero ver / Viendo / Visto) y reorganizá con drag & drop
+- **Listas personalizadas** — Creá colecciones con nombre y emoji para organizar tu contenido
+- **Reseñas y calificaciones** — Escribí tu opinión y ponele tu nota del 1 al 10 a cada título
+- **Recomendaciones** — Sugerencias personalizadas basadas en tus géneros más vistos
+- **Estadísticas** — Tiempo total visto, géneros favoritos y distribución de contenido con gráficos
+- **Perfil** — Elegí tu avatar, editá tu nombre y cambiá tu contraseña
+- **Notificaciones** — Toast notifications en todas las acciones importantes
 
 ---
 
-## 🛠️ Stack tecnológico
+## Stack tecnológico
 
 | Capa | Tecnología |
 |------|-----------|
@@ -58,12 +60,12 @@ Buscá, guardá y organizá todo el contenido que querés ver — en un solo lug
 
 ---
 
-## 🚀 Correr el proyecto localmente
+## Correr el proyecto localmente
 
 ### Requisitos previos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo
-- Una API key de [TMDB](https://www.themoviedb.org/settings/api) (gratis)
+- Una API key de [TMDB](https://www.themoviedb.org/settings/api) (gratuita)
 
 ### Pasos
 
@@ -84,9 +86,9 @@ Editá el `.env` con tus valores:
 
 ```env
 POSTGRES_USER=watchly
-POSTGRES_PASSWORD=tu_password
+POSTGRES_PASSWORD=tu_password_seguro
 POSTGRES_DB=watchly
-JWT_SECRET=una_clave_secreta_larga
+JWT_SECRET=una_clave_secreta_larga_y_aleatoria
 TMDB_API_KEY=tu_api_key_de_tmdb
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:4001
@@ -104,10 +106,11 @@ docker compose up --build
 |----------|-----|
 | Frontend | http://localhost:3001 |
 | Backend | http://localhost:4001 |
+| Health check | http://localhost:4001/health |
 
 ---
 
-## 📁 Estructura del proyecto
+## Estructura del proyecto
 
 ```
 watchly/
@@ -127,7 +130,8 @@ watchly/
 │           ├── watchlist.js
 │           ├── tmdb.js
 │           ├── profile.js
-│           └── stats.js
+│           ├── stats.js
+│           └── lists.js
 └── frontend/
     ├── Dockerfile
     ├── package.json
@@ -140,11 +144,14 @@ watchly/
     │   ├── StarRating.js
     │   └── Toast.js
     └── app/
-        ├── page.js
+        ├── page.js              ← Landing
         ├── home/
         ├── login/
         ├── search/
         ├── watchlist/
+        ├── lists/
+        │   └── [id]/
+        ├── recommendations/
         ├── stats/
         ├── profile/
         ├── movie/[id]/
@@ -153,7 +160,7 @@ watchly/
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Auth
 | Método | Ruta | Descripción |
@@ -166,9 +173,19 @@ watchly/
 |--------|------|-------------|
 | GET | `/watchlist` | Obtener lista del usuario |
 | POST | `/watchlist` | Agregar título |
-| PATCH | `/watchlist/reorder` | Reordenar lista |
-| PATCH | `/watchlist/:id` | Actualizar estado o calificación |
+| PATCH | `/watchlist/reorder` | Reordenar con drag & drop |
+| PATCH | `/watchlist/:id` | Actualizar estado, calificación o reseña |
 | DELETE | `/watchlist/:id` | Eliminar título |
+
+### Listas *(requiere token)*
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/lists` | Obtener todas las listas |
+| POST | `/lists` | Crear lista |
+| GET | `/lists/:id` | Detalle de una lista |
+| DELETE | `/lists/:id` | Eliminar lista |
+| POST | `/lists/:id/items` | Agregar título a lista |
+| DELETE | `/lists/:id/items/:itemId` | Quitar título de lista |
 
 ### TMDB *(requiere token)*
 | Método | Ruta | Descripción |
@@ -178,6 +195,7 @@ watchly/
 | GET | `/tmdb/random?type=` | Título al azar |
 | GET | `/tmdb/movie/:id` | Detalle de película |
 | GET | `/tmdb/tv/:id` | Detalle de serie |
+| GET | `/tmdb/recommendations` | Recomendaciones personalizadas |
 
 ### Perfil *(requiere token)*
 | Método | Ruta | Descripción |
@@ -194,9 +212,9 @@ watchly/
 
 ---
 
-## 👤 Autor
+## Autor
 
-**Joaquín**
+**Joaquín Poblete**
 
 [![GitHub](https://img.shields.io/badge/GitHub-joakol119-181717?style=flat-square&logo=github)](https://github.com/joakol119)
 
@@ -204,6 +222,6 @@ watchly/
 
 <div align="center">
 
-*Hecho por Joaquín usando Next.js, Node.js y la API de TMDB*
+*Hecho con Next.js, Node.js y la API de TMDB*
 
 </div>
