@@ -202,6 +202,10 @@ export default function WatchlistPage() {
                     {/* Hover overlay */}
                     <div className="card-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,16,0.98) 50%, rgba(8,8,16,0.5) 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12 }} onClick={e => e.stopPropagation()}>
                       <p style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9', marginBottom: 8, lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.title}</p>
+                      <button onClick={() => router.push(`/${item.media_type}/${item.tmdb_id}`)}
+                        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#f1f5f9', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit', marginBottom: 8, textAlign: 'center' }}>
+                        Ver detalles →
+                      </button>
 
                       {/* Status buttons */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
