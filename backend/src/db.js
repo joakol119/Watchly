@@ -26,6 +26,7 @@ async function init() {
       poster_path TEXT,
       status TEXT DEFAULT 'want_to_watch',
       position INTEGER DEFAULT 0,
+      user_rating INTEGER DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(user_id, tmdb_id, media_type)
     )
@@ -34,6 +35,7 @@ async function init() {
   await query(`ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0`);
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT DEFAULT 'red'`);
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_key TEXT DEFAULT 'cool'`);
+  await query(`ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS user_rating INTEGER DEFAULT NULL`);
 
   console.log('Database initialized');
 }

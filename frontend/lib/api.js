@@ -36,6 +36,7 @@ export const api = {
   getWatchlist: () => request('/watchlist'),
   addToWatchlist: (data) => request('/watchlist', { method: 'POST', body: JSON.stringify(data) }),
   updateWatchlist: (id, status) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  rateWatchlist: (id, user_rating) => request(`/watchlist/${id}`, { method: 'PATCH', body: JSON.stringify({ user_rating }) }),
   reorderWatchlist: (items) => request('/watchlist/reorder', { method: 'PATCH', body: JSON.stringify({ items }) }),
   removeFromWatchlist: (id) => request(`/watchlist/${id}`, { method: 'DELETE' }),
   getProfile: () => request('/profile'),
